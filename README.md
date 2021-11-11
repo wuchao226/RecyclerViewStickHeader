@@ -31,3 +31,49 @@ RecyclerView 实现吸顶效果项目实战
 
 ### outRect 设置Item的间距 
 ![out_rect](https://github.com/wuchao226/RecyclerViewStickHeader/blob/master/images/out_rect.png)
+
+### 核心实现点
+1. 通过 getItemOffsets() 方法获取当前模板 view 的 left、top、right、bottom 边距，这些留出的间距用于绘制这些辅助性 ui。
+```
+// RecyclerView的measure child方法
+public void measureChild(@NonNull View child, int widthUsed, int heightUsed) {
+      final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+      // 将 getItemOffsets() 获取的值累加到测量值之中
+      final Rect insets = mRecyclerView.getItemDecorInsetsForChild(child);
+      widthUsed += insets.left + insets.right;
+      heightUsed += insets.top + insets.bottom;
+      final int widthSpec = getChildMeasureSpec(getWidth(), getWidthMode(),
+          getPaddingLeft() + getPaddingRight() + widthUsed, lp.width,
+          canScrollHorizontally());
+      final int heightSpec = getChildMeasureSpec(getHeight(), getHeightMode(),
+          getPaddingTop() + getPaddingBottom() + heightUsed, lp.height,
+          canScrollVertically());
+      if (shouldMeasureChild(child, widthSpec, heightSpec, lp)) {
+        child.measure(widthSpec, heightSpec);
+      }
+    }
+```
+2. 通过 onDrawOver() 绘制悬浮视图，绘制的 ui 在所有子视图之上。
+```
+@Override
+  public void draw(Canvas c) {
+    super.draw(c);
+    // 在 RecyclerView 绘制完之后回调 onDrawOver() 方法
+    final int count = mItemDecorations.size();
+    for (int i = 0; i < count; i++) {
+      mItemDecorations.get(i).onDrawOver(c, this, mState);
+    }
+ }
+```
+3. 通过 onDraw() 方法绘制分割线等视图。
+```
+ public void onDraw(Canvas c) {
+    super.onDraw(c);
+    // 先回调 onDraw() 方法，在绘制 RecyclerView 子 view
+    final int count = mItemDecorations.size();
+    for (int i = 0; i < count; i++) {
+      mItemDecorations.get(i).onDraw(c, this, mState);
+    }
+  }
+```
+
